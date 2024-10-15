@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Assistant</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Medical Assistant</h1>
+    
+    <h2>Submit Text Query</h2>
+    <form id="text-form">
+        <textarea id="text-input" rows="4" cols="50" placeholder="Enter your text query here..."></textarea>
+        <br>
+        <button type="button" onclick="submitText()">Submit Text</button>
+    </form>
+
+    <h2>Upload a Document</h2>
+    <form id="file-form" enctype="multipart/form-data">
+        <input type="file" id="file-input" accept=".pdf,.docx">
+        <br>
+        <button type="button" onclick="submitFile()">Submit Document</button>
+    </form>
+
+    <h2>Upload an Audio File</h2>
+    <form id="audio-form" enctype="multipart/form-data">
+        <input type="file" id="audio-input" accept=".mp3,.wav">
+        <br>
+        <button type="button" onclick="submitAudio()">Submit Audio</button>
+    </form>
+
+    <div id="response">
+        <!-- The response from the server will be displayed here -->
+    </div>
+
+    <script>
+        async function submitText() {
+            const text = document.getElementById('text-input').value;
+            const formData = new FormData();
+            formData.append('query', text);
+
+            const response = await fetch('/process_text', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('response').innerText = JSON.stringify(result, null, 2);
+        }
+
+        async function submitFile() {
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch('/process_document', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('response').innerText = JSON.stringify(result, null, 2);
+        }
+
+        async function submitAudio() {
+            const audioInput = document.getElementById('audio-input');
+            const audio = audioInput.files[0];
+            const formData = new FormData();
+            formData.append('file', audio);
+
+            const response = await fetch('/process_voice', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('response').innerText = JSON.stringify(result, null, 2);
+        }
+    </script>
+</body>
+</html>

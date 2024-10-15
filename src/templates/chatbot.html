@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Assistant Chatbot</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Medical Assistant Chatbot</h1>
+
+    <button onclick="window.location.href='/'">Back to Main Page</button>
+
+    <div id="chat-container">
+        <div id="messages"></div>
+        <textarea id="user-input" placeholder="Type your message here..." rows="3"></textarea>
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const userInput = document.getElementById('user-input').value;
+            displayMessage(userInput, 'user');
+
+            const response = await fetch('/ask_model', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: userInput })
+            });
+
+            const result = await response.json();
+            displayMessage(result.response, 'assistant');
+            document.getElementById('user-input').value = '';
+        }
+
+        function displayMessage(message, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = sender;
+            messageDiv.innerText = message;
+            document.getElementById('messages').appendChild(messageDiv);
+        }
+    </script>
+
+    <style>
+        #chat-container {
+            border: 1px solid #ccc;
+            padding: 10px;
+            width: 80%;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        #messages {
+            height: 400px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+
+        .user {
+            text-align: right;
+            color: blue;
+            margin: 5px 0;
+        }
+
+        .assistant {
+            text-align: left;
+            color: green;
+            margin: 5px 0;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        /* Styling for Back button */
+        button {
+            margin-bottom: 20px; /* Adds space below the Back button */
+        }
+    </style>
+</body>
+</html>
