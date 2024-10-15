@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medical Assistant</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="static/home.css">
 </head>
 <body>
     <h1>Medical Assistant</h1>
@@ -40,12 +40,21 @@
             const formData = new FormData();
             formData.append('query', text);
 
-            const response = await fetch('/process_text', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            document.getElementById('response').innerText = JSON.stringify(result, null, 2);
+            try {
+                const response = await fetch('/process_text', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // Redirect to /chatbot (or whichever URL you want to show the new template)
+                    window.location.href = '/chatbot';
+                } else {
+                    document.getElementById('response').innerText = 'Error submitting text';
+                }
+            } catch (error) {
+                document.getElementById('response').innerText = 'Network error occurred';
+            }
         }
 
         async function submitFile() {

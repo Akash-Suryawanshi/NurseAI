@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, File, UploadFile, Form
 from fastapi.responses import JSONResponse
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pydub import AudioSegment
@@ -11,35 +12,59 @@ import io
 app = FastAPI()
 
 # Mount static files (CSS, JS, images) to the /static endpoint
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="src/static"), name="static")
 
 # Define where the templates are located
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="src/templates")
 
 # Root endpoint to render the HTML UI
 @app.get("/")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to MedAssistant API"}
+@app.get("/chatbot")
+async def get_chatbot(request: Request):
+    global user_query
+
+    # Use the stored user_query and check for an existing response
+    response = user_query if user_query else ""
+
+    # Render the chatbot.html template with the stored query and response
+    return templates.TemplateResponse("chatbot.html", {
+        "request": request,
+        "content": user_query,
+        "response": response  # Pass response here, even if it's empty
+    })
+
+# @app.get("/")
+# async def root():
+#     return {"message": "Welcome to MedAssistant API"}
 
 @app.get("/favicon.ico")
 async def favicon():
     return {"message": "No favicon"}
 
 
-# 1. Text Input Endpoint
 @app.post("/process_text")
-async def process_text(query: str = Form(...)):
-    # Process text input (call agent here)
-    result = {"input_type": "text", "content": query}
-    return JSONResponse(content=result)
+async def process_text(request: Request, query: str = Form(...)):
+    global user_query
+    user_query = query  # Store the submitted text
 
-# 2. Document File Input (PDF or DOCX) Endpoint
+    # Get the response from the model (for now, echo the query)
+    response = query  # This should be replaced by the model's response in the future
+
+    # Pass both the query and response to the chatbot.html page
+    return templates.TemplateResponse("chatbot.html", {
+        "request": request,
+        "input_type": "text",
+        "content": user_query,  # User's message
+        "response": response  # Bot's response (echoed back for now)
+    })
+
+
+# Process document files
 @app.post("/process_document")
-async def process_document(file: UploadFile = File(...)):
+async def process_document(request: Request, file: UploadFile = File(...)):
     content = ""
     if file.filename.endswith(".docx"):
         content = extract_text_from_docx(file)
@@ -48,13 +73,12 @@ async def process_document(file: UploadFile = File(...)):
     else:
         return JSONResponse(content={"error": "Unsupported document format"}, status_code=400)
     
-    # Process document content (call agent here)
-    result = {"input_type": "document", "content": content}
-    return JSONResponse(content=result)
+    return templates.TemplateResponse("chatbot.html", {"request": request, "input_type": "document", "content": content})
 
-# 3. Voice Input (Audio File) Endpoint
+
+# Process voice input
 @app.post("/process_voice")
-async def process_voice(file: UploadFile = File(...)):
+async def process_voice(request: Request, file: UploadFile = File(...)):
     recognizer = sr.Recognizer()
     audio = AudioSegment.from_file(file.file)
 
@@ -68,8 +92,7 @@ async def process_voice(file: UploadFile = File(...)):
         audio_data = recognizer.record(source)
         try:
             text = recognizer.recognize_google(audio_data)
-            result = {"input_type": "voice", "content": text}
-            return JSONResponse(content=result)
+            return templates.TemplateResponse("chatbot.html", {"request": request, "input_type": "voice", "content": text})
         except sr.UnknownValueError:
             return JSONResponse(content={"error": "Could not understand the audio"}, status_code=400)
         except sr.RequestError:
@@ -90,5 +113,10 @@ def extract_text_from_pdf(file):
         text += page.get_text("text")
     return text 
 
-# To run the FastAPI server, use the command below:
-# uvicorn app:app --reload
+# Get model response based on user input
+@app.post("/ask_model")
+async def ask_model(query: str = Form(...)):
+    # For now, simply echo back the query as the response
+    response = query
+    return {"response": response}
+

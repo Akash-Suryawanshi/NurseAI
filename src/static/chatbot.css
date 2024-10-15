@@ -1,0 +1,55 @@
+/* Chatbot Container Styling */
+#chat-container {
+    border: 1px solid #ccc;
+    padding: 10px;
+    width: 80%;
+    max-width: 600px;
+    margin: auto;
+}
+
+#messages {
+    height: 400px;
+    overflow-y: scroll;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #f9f9f9;
+}
+
+.user {
+    text-align: right;
+    color: blue;
+    margin: 5px 0;
+}
+
+.assistant {
+    text-align: left;
+    color: green;
+    margin: 5px 0;
+}
+
+textarea {
+    width: 100%;
+    padding: 10px;
+}
+
+input[type="file"] {
+    width: calc(100% - 10px);
+    margin-bottom: 10px;
+}
+
+button {
+    padding: 10px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+h3 {
+    margin-top: 20px;
+}
