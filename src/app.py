@@ -3,13 +3,18 @@ from fastapi.responses import JSONResponse
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from langchain.schema import HumanMessage
 from pydub import AudioSegment
 import speech_recognition as sr
+from src.pipelines.CoT import CoTPipeline
 import docx
 import fitz  # PyMuPDF
 import io
+from src.models.base_llm import get_gpt4_llm
 
 app = FastAPI()
+
+cot_pipeline = CoTPipeline()
 
 # Mount static files (CSS, JS, images) to the /static endpoint
 app.mount("/static", StaticFiles(directory="src/static"), name="static")
@@ -22,23 +27,6 @@ templates = Jinja2Templates(directory="src/templates")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/chatbot")
-async def get_chatbot(request: Request):
-    global user_query
-
-    # Use the stored user_query and check for an existing response
-    response = user_query if user_query else ""
-
-    # Render the chatbot.html template with the stored query and response
-    return templates.TemplateResponse("chatbot.html", {
-        "request": request,
-        "content": user_query,
-        "response": response  # Pass response here, even if it's empty
-    })
-
-# @app.get("/")
-# async def root():
-#     return {"message": "Welcome to MedAssistant API"}
 
 @app.get("/favicon.ico")
 async def favicon():
@@ -48,18 +36,13 @@ async def favicon():
 @app.post("/process_text")
 async def process_text(request: Request, query: str = Form(...)):
     global user_query
+    global response
     user_query = query  # Store the submitted text
+    messages = [HumanMessage(content=query)]
+    response = cot_pipeline.generate_response(query)
+    return JSONResponse({"response": response.content})
+    # return JSONResponse({"response": response})
 
-    # Get the response from the model (for now, echo the query)
-    response = query  # This should be replaced by the model's response in the future
-
-    # Pass both the query and response to the chatbot.html page
-    return templates.TemplateResponse("chatbot.html", {
-        "request": request,
-        "input_type": "text",
-        "content": user_query,  # User's message
-        "response": response  # Bot's response (echoed back for now)
-    })
 
 
 # Process document files
@@ -72,7 +55,7 @@ async def process_document(request: Request, file: UploadFile = File(...)):
         content = extract_text_from_pdf(file)
     else:
         return JSONResponse(content={"error": "Unsupported document format"}, status_code=400)
-    
+
     return templates.TemplateResponse("chatbot.html", {"request": request, "input_type": "document", "content": content})
 
 
@@ -113,10 +96,4 @@ def extract_text_from_pdf(file):
         text += page.get_text("text")
     return text 
 
-# Get model response based on user input
-@app.post("/ask_model")
-async def ask_model(query: str = Form(...)):
-    # For now, simply echo back the query as the response
-    response = query
-    return {"response": response}
 

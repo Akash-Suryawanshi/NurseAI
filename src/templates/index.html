@@ -4,59 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medical Assistant</title>
-    <link rel="stylesheet" href="static/home.css">
+    <link rel="stylesheet" href="/static/home.css">
 </head>
 <body>
     <h1>Medical Assistant</h1>
     
-    <h2>Submit Text Query</h2>
-    <form id="text-form">
-        <textarea id="text-input" rows="4" cols="50" placeholder="Enter your text query here..."></textarea>
-        <br>
-        <button type="button" onclick="submitText()">Submit Text</button>
-    </form>
+    <div class="container">
+        <!-- Left side: Input forms and Agent Selection (1/4th of the screen width) -->
+        <div class="input-container">
+            <h2>Input Options</h2>
 
-    <h2>Upload a Document</h2>
-    <form id="file-form" enctype="multipart/form-data">
-        <input type="file" id="file-input" accept=".pdf,.docx">
-        <br>
-        <button type="button" onclick="submitFile()">Submit Document</button>
-    </form>
+            <!-- Document Upload Form -->
+            <h3>Upload a Document</h3>
+            <form id="file-form" enctype="multipart/form-data">
+                <input type="file" id="file-input" accept=".pdf,.docx">
+                <button type="button" onclick="submitFile()">Submit Document</button>
+            </form>
 
-    <h2>Upload an Audio File</h2>
-    <form id="audio-form" enctype="multipart/form-data">
-        <input type="file" id="audio-input" accept=".mp3,.wav">
-        <br>
-        <button type="button" onclick="submitAudio()">Submit Audio</button>
-    </form>
+            <!-- Audio Upload Form -->
+            <h3>Upload an Audio File</h3>
+            <form id="audio-form" enctype="multipart/form-data">
+                <input type="file" id="audio-input" accept=".mp3,.wav">
+                <button type="button" onclick="submitAudio()">Submit Audio</button>
+            </form>
+        </div>
 
-    <div id="response">
-        <!-- The response from the server will be displayed here -->
+        <!-- Right side: Chatbox (3/4th of the screen width) -->
+        <div class="chat-container">
+            <div id="messages"></div> <!-- Chat messages will be appended here -->
+
+            <!-- Chat Input Form -->
+            <form id="chat-form">
+                <textarea id="chat-input" name="query" placeholder="Type your message here..." rows="3"></textarea>
+                <button type="button" onclick="submitChat()">Submit Chat</button>
+            </form>
+        </div>
     </div>
 
     <script>
-        async function submitText() {
-            const text = document.getElementById('text-input').value;
-            const formData = new FormData();
-            formData.append('query', text);
 
-            try {
-                const response = await fetch('/process_text', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (response.ok) {
-                    // Redirect to /chatbot (or whichever URL you want to show the new template)
-                    window.location.href = '/chatbot';
-                } else {
-                    document.getElementById('response').innerText = 'Error submitting text';
-                }
-            } catch (error) {
-                document.getElementById('response').innerText = 'Network error occurred';
-            }
-        }
-
+        // Send Document Upload
         async function submitFile() {
             const fileInput = document.getElementById('file-input');
             const file = fileInput.files[0];
@@ -68,9 +55,10 @@
                 body: formData
             });
             const result = await response.json();
-            document.getElementById('response').innerText = JSON.stringify(result, null, 2);
+            appendMessage(result.content, 'user');
         }
 
+        // Send Audio Upload
         async function submitAudio() {
             const audioInput = document.getElementById('audio-input');
             const audio = audioInput.files[0];
@@ -82,7 +70,33 @@
                 body: formData
             });
             const result = await response.json();
-            document.getElementById('response').innerText = JSON.stringify(result, null, 2);
+            appendMessage(result.content, 'user');
+        }
+
+        // Chat Input
+        async function submitChat() {
+            const chatMessage = document.getElementById('chat-input').value;
+            const formData = new FormData();
+            formData.append('query', chatMessage);
+            document.getElementById('chat-input').value = '';
+
+            const response = await fetch('/process_text', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            appendMessage(chatMessage, 'user');
+            appendMessage(result.response, 'assistant');
+        }
+
+        // Append message to chatbox
+        function appendMessage(message, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add(sender); // 'user' or 'assistant'
+            messageDiv.textContent = message;
+            document.getElementById('messages').appendChild(messageDiv);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
         }
     </script>
 </body>
