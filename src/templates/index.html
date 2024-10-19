@@ -50,12 +50,22 @@
             const formData = new FormData();
             formData.append('file', file);
 
+            // Clear the file input field after submission
+            fileInput.value = '';
+
             const response = await fetch('/process_document', {
                 method: 'POST',
                 body: formData
             });
-            const result = await response.json();
-            appendMessage(result.content, 'user');
+
+            // Process the response
+            if (response.ok) {
+                const result = await response.json();
+                appendMessage(`Document processed: ${file.name}`, 'user'); // User-side message for document upload
+                appendMessage(result.response, 'assistant'); // Assistant's diagnosis response
+            } else {
+                appendMessage("Error processing the document.", 'assistant');
+            }
         }
 
         // Send Audio Upload
@@ -65,12 +75,22 @@
             const formData = new FormData();
             formData.append('file', audio);
 
+            // Clear the audio input field after submission
+            audioInput.value = '';
+
             const response = await fetch('/process_voice', {
                 method: 'POST',
                 body: formData
             });
-            const result = await response.json();
-            appendMessage(result.content, 'user');
+
+            // Process the response
+            if (response.ok) {
+                const result = await response.json();
+                appendMessage(`Audio processed: ${audio.name}`, 'user'); // User-side message for audio upload
+                appendMessage(result.response, 'assistant'); // Assistant's diagnosis response
+            } else {
+                appendMessage("Error processing the audio file.", 'assistant');
+            }
         }
 
         // Chat Input
@@ -83,7 +103,8 @@
             const response = await fetch('/process_text', {
                 method: 'POST',
                 body: formData
-            });
+            });         
+            // console.log(response);
 
             const result = await response.json();
             appendMessage(chatMessage, 'user');

@@ -38,9 +38,11 @@ async def process_text(request: Request, query: str = Form(...)):
     global user_query
     global response
     user_query = query  # Store the submitted text
-    messages = [HumanMessage(content=query)]
-    response = cot_pipeline.generate_response(query)
-    return JSONResponse({"response": response.content})
+    # messages = [HumanMessage(content=query)]
+    # console.log(messages) 
+    diagnostic_result = cot_pipeline.generate_diagnosis(query)
+    print(diagnostic_result)
+    return JSONResponse({"response": diagnostic_result.get("diagnosis_result")})
     # return JSONResponse({"response": response})
 
 
@@ -55,8 +57,8 @@ async def process_document(request: Request, file: UploadFile = File(...)):
         content = extract_text_from_pdf(file)
     else:
         return JSONResponse(content={"error": "Unsupported document format"}, status_code=400)
-
-    return templates.TemplateResponse("chatbot.html", {"request": request, "input_type": "document", "content": content})
+    diagnostic_result = cot_pipeline.generate_diagnosis(content)
+    return JSONResponse({"response": diagnostic_result.get("diagnosis_result")})
 
 
 # Process voice input
@@ -75,7 +77,8 @@ async def process_voice(request: Request, file: UploadFile = File(...)):
         audio_data = recognizer.record(source)
         try:
             text = recognizer.recognize_google(audio_data)
-            return templates.TemplateResponse("chatbot.html", {"request": request, "input_type": "voice", "content": text})
+            diagnostic_result = cot_pipeline.generate_diagnosis(text)
+            return JSONResponse({"response": diagnostic_result.get("diagnosis_result")})
         except sr.UnknownValueError:
             return JSONResponse(content={"error": "Could not understand the audio"}, status_code=400)
         except sr.RequestError:
